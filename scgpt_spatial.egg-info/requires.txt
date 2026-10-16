@@ -1,0 +1,15 @@
+scgpt>=0.2.5
+torch>=2.0
+numpy
+pandas
+scipy
+scanpy
+anndata
+scikit-learn
+einops
+matplotlib
+tqdm
+typing-extensions
+
+[flash]
+flash-attn<2

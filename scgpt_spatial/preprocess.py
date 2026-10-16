@@ -203,7 +203,7 @@ class Preprocessor:
                 col = layer_data[:, idx].flatten()
                 nonzero_idx = np.nonzero(col)[0]
                 values = col[nonzero_idx]
-                gene_stats_dict.loc[i] = [np.float(values.mean())]
+                gene_stats_dict.loc[i] = [float(values.mean())]
             for i, g in enumerate(gene_ids):
                 col = layer_data[:, i]
                 nonzero_idx = np.nonzero(col)[0]
@@ -223,7 +223,7 @@ class Preprocessor:
             binned_rows = []
             bin_edges = []
             layer_data = _get_obs_rep(adata, layer=key_to_process)
-            layer_data = layer_data.A if issparse(layer_data) else layer_data
+            layer_data = layer_data.toarray() if issparse(layer_data) else layer_data
             for row in layer_data:
                 non_zero_ids = row.nonzero()
                 non_zero_row = row[non_zero_ids]

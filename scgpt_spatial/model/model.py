@@ -10,11 +10,20 @@ import torch.distributed as dist
 import torch.nn.functional as F
 from torch.nn import TransformerEncoder, TransformerEncoderLayer
 from torch.distributions import Bernoulli
-from flash_attn.flash_attention import FlashMHA
 from tqdm import trange
 
+# flash-attn v1 is optional, as in scGPT: without it, use_fast_transformer=False and
+# use_generative_training=False run on torch's TransformerEncoder.
+try:
+    from flash_attn.flash_attention import FlashMHA
+    from .flash_layers import FlashscGPTLayer, FlashscGPTGenerator
+
+    flash_attn_available = True
+except ImportError:
+    warnings.warn("flash_attn (v1 API) is not installed")
+    flash_attn_available = False
+
 from .grad_reverse import grad_reverse
-from .flash_layers import FlashscGPTLayer, FlashscGPTGenerator
 from .MoE import MoELayer
 
 class TransformerModel(nn.Module):
@@ -62,6 +71,9 @@ class TransformerModel(nn.Module):
         self.use_MVC_impute = use_MVC_impute
         self.impute_MVC_knn_k = impute_MVC_knn_k
         self.use_moe_dec = use_moe_dec
+        # load_pretrained() reads this to rename flash Wqkv weights to torch in_proj_;
+        # without it the attention weights silently fail to load on the torch path.
+        self.use_fast_transformer = use_fast_transformer
 
         if self.input_emb_style not in ["category", "continuous", "scaling"]:
             raise ValueError(
@@ -90,6 +102,16 @@ class TransformerModel(nn.Module):
         # Batch Encoder
         if use_batch_labels:
             self.batch_encoder = BatchLabelEncoder(num_batch_labels, d_model)
+
+        needs_flash = use_generative_training or (
+            use_fast_transformer and fast_transformer_backend == "flash"
+        )
+        if needs_flash and not flash_attn_available:
+            raise ImportError(
+                "use_generative_training / use_fast_transformer with the flash backend "
+                "need flash_attn (v1 API); pass use_fast_transformer=False and "
+                "use_generative_training=False to use torch attention"
+            )
 
         if use_generative_training:
             encoder_layers = FlashscGPTLayer(

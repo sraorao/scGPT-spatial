@@ -11,10 +11,8 @@ import numpy as np
 import torch
 import pandas as pd
 from anndata import AnnData
-import scib
 from matplotlib import pyplot as plt
 from matplotlib import axes
-from IPython import get_ipython
 
 from .. import logger
 
@@ -62,6 +60,8 @@ def category_str2int(category_strs: List[str]) -> List[int]:
 def isnotebook() -> bool:
     """check whether excuting in jupyter notebook."""
     try:
+        from IPython import get_ipython
+
         shell = get_ipython().__class__.__name__
         if shell == "ZMQInteractiveShell":
             return True  # Jupyter notebook or qtconsole
@@ -69,7 +69,7 @@ def isnotebook() -> bool:
             return True  # Terminal running IPython
         else:
             return False  # Other type (?)
-    except NameError:
+    except (ImportError, NameError):
         return False  # Probably standard Python interpreter
 
 
@@ -310,6 +310,8 @@ def eval_scib_metrics(
     label_key: str = "celltype",
     notes: Optional[str] = None,
 ) -> Dict:
+    import scib  # only needed for integration metrics
+
     results = scib.metrics.metrics(
         adata,
         adata_int=adata,

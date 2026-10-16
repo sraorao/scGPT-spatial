@@ -103,7 +103,7 @@ def get_batch_cell_embeddings(
 
     count_matrix = adata.X
     count_matrix = (
-        count_matrix if isinstance(count_matrix, np.ndarray) else count_matrix.A
+        count_matrix if isinstance(count_matrix, np.ndarray) else count_matrix.toarray()
     )
 
     # gene vocabulary ids
@@ -129,7 +129,7 @@ def get_batch_cell_embeddings(
                 col = self.count_matrix[:, idx].flatten()
                 nonzero_idx = np.nonzero(col)[0]
                 values = col[nonzero_idx]
-                self.gene_stats_dict.loc[i] = [np.float(values.mean())]
+                self.gene_stats_dict.loc[i] = [float(values.mean())]
 
         def __len__(self):
             return len(self.count_matrix)
@@ -344,7 +344,7 @@ def embed_data(
 
     if return_new_adata:
         obs_df = adata.obs[obs_to_save] if obs_to_save is not None else None
-        return sc.AnnData(X=cell_embeddings, obs=obs_df, dtype="float32")
+        return sc.AnnData(X=cell_embeddings.astype("float32"), obs=obs_df)
 
     adata.obsm["X_scGPT"] = cell_embeddings
     return adata
